@@ -15,9 +15,9 @@
     "@types/jest": "27.0.2",
     "@types/node": "16.11.1",
     "aws-cdk": "1.128.0",
-    "jest": "27.2.4",
-    "ts-jest": "27.0.5",
-    "ts-node": "10.2.1",
+    "jest": "27.3.1",
+    "ts-jest": "27.0.7",
+    "ts-node": "10.3.0",
     "typescript": "~4.4.3"
   },
   "dependencies": {
@@ -33,15 +33,15 @@
     "@aws-cdk/aws-sns": "1.128.0",
     "@aws-cdk/aws-sns-subscriptions": "1.128.0",
     "@aws-cdk/core": "1.128.0",
-    "@aws-sdk/client-dynamodb": "3.34.0",
-    "@aws-sdk/client-ses": "3.34.0",
-    "@aws-sdk/util-dynamodb": "3.34.0",
-    "@types/aws-lambda": "8.10.83",
+    "@aws-sdk/client-dynamodb": "3.37.0",
+    "@aws-sdk/client-ses": "3.37.0",
+    "@aws-sdk/util-dynamodb": "3.37.0",
+    "@types/aws-lambda": "8.10.84",
     "aws-lambda": "1.0.6",
     "aws-xray-sdk-core": "3.3.3",
     "cheerio": "1.0.0-rc.10",
-    "esbuild": "0.13.3",
+    "esbuild": "0.13.8",
     "node-fetch": "3.0.0",
-    "source-map-support": "0.5.16"
+    "source-map-support": "0.5.20"
   }
 }

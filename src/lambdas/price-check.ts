@@ -13,7 +13,6 @@ import { captureAWSv3Client, getSegment, Segment } from "aws-xray-sdk-core";
 const { AWS_REGION: region, TABLE_NAME: TableName } = process.env;
 
 // clients init
-// @ts-ignore
 const dbClient = captureAWSv3Client(new DynamoDBClient({ region }));
 
 const handler: ScheduledHandler = async (event) => {
@@ -22,11 +21,9 @@ const handler: ScheduledHandler = async (event) => {
 
   try {
     console.log("db scan: start");
-    // @ts-ignore
+
     const { Items, Count } = await dbClient.send(
-      // @ts-ignore
       new ScanCommand({
-        // @ts-ignore
         TableName,
       })
     );
@@ -69,11 +66,8 @@ const handler: ScheduledHandler = async (event) => {
       console.log(`diff: ${JSON.stringify(diff)}`);
       const updateCommands = diff.map((item) =>
         dbClient.send(
-          // @ts-ignore
           new PutItemCommand({
-            // @ts-ignore
             TableName,
-            // @ts-ignore
             Item: marshall(item),
           })
         )

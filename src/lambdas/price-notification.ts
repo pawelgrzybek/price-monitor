@@ -8,7 +8,6 @@ import { captureAWSv3Client, getSegment, Segment } from "aws-xray-sdk-core";
 const { AWS_REGION: region } = process.env;
 
 // clients init
-// @ts-ignore
 const sesClient = captureAWSv3Client(new SESClient({ region }));
 
 const handler: DynamoDBStreamHandler = async (event) => {
@@ -34,7 +33,6 @@ const handler: DynamoDBStreamHandler = async (event) => {
   try {
     console.log("emain send: start");
     await sesClient.send(
-      // @ts-ignore
       new SendEmailCommand({
         Source: email,
         Destination: {
