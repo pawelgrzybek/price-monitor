@@ -11,6 +11,7 @@ import * as cloudwatch from "@aws-cdk/aws-cloudwatch";
 import * as cloudwatchActions from "@aws-cdk/aws-cloudwatch-actions";
 import * as sns from "@aws-cdk/aws-sns";
 import * as snsSubscriptions from "@aws-cdk/aws-sns-subscriptions";
+import * as ssm from "@aws-cdk/aws-ssm";
 
 export class PriceMonitorStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -25,22 +26,18 @@ export class PriceMonitorStack extends cdk.Stack {
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
     });
 
-    // CloudFormation param for email address
-    const paramPriceMonitorAlertsEmailAddress = new cdk.CfnParameter(
+    const emailAlerts = ssm.StringParameter.fromStringParameterAttributes(
       this,
-      "PriceMonitorAlertsEmailAddress",
+      "PriceMonitorEmailAlerts",
       {
-        type: "String",
-        description: "Email address for CloudWatch alerts",
+        parameterName: "/CommentsStack/EmailAlerts",
       }
-    );
+    ).stringValue;
 
     // SNS for lambda alerts
     const topicPriceMonitorAlerts = new sns.Topic(this, "PriceMonitorAlerts");
     topicPriceMonitorAlerts.addSubscription(
-      new snsSubscriptions.EmailSubscription(
-        paramPriceMonitorAlertsEmailAddress.valueAsString
-      )
+      new snsSubscriptions.EmailSubscription(emailAlerts)
     );
 
     // Lambda: Price Check
