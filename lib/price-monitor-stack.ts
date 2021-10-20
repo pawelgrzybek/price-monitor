@@ -28,14 +28,14 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const emailAlerts = ssm.StringParameter.fromStringParameterAttributes(
       this,
-      "PriceMonitorEmailAlerts",
+      "EmailAlertsParam",
       {
         parameterName: "/CommentsStack/EmailAlerts",
       }
     ).stringValue;
 
     // SNS for lambda alerts
-    const topicPriceMonitorAlerts = new sns.Topic(this, "PriceMonitorAlerts");
+    const topicPriceMonitorAlerts = new sns.Topic(this, "AlertsTopic");
     topicPriceMonitorAlerts.addSubscription(
       new snsSubscriptions.EmailSubscription(emailAlerts)
     );
@@ -43,7 +43,7 @@ export class PriceMonitorStack extends cdk.Stack {
     // Lambda: Price Check
     const lambdaPriceCheck = new lambdaNodejs.NodejsFunction(
       this,
-      "PriceCheck",
+      "PriceCheckLambda",
       {
         handler: "handler",
         timeout: cdk.Duration.seconds(20),
@@ -59,7 +59,7 @@ export class PriceMonitorStack extends cdk.Stack {
     // Lambda: Notification
     const lambdaNotification = new lambdaNodejs.NodejsFunction(
       this,
-      "Notification",
+      "NotificationLambda",
       {
         handler: "handler",
         timeout: cdk.Duration.seconds(20),
@@ -147,15 +147,13 @@ export class PriceMonitorStack extends cdk.Stack {
       })
     );
 
-    // rules
-    const ruleEveryOneHour = new events.Rule(this, "EveryOneHour", {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
-    });
-
-    // add rules target
-    ruleEveryOneHour.addTarget(new targets.LambdaFunction(lambdaPriceCheck));
-
     // grant db access
     dynamoDbTable.grantReadWriteData(lambdaPriceCheck);
+
+    // rules
+    new events.Rule(this, "ScheduledEvent", {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
+      targets: [new targets.LambdaFunction(lambdaPriceCheck)],
+    });
   }
 }

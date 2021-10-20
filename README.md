@@ -1,7 +1,11 @@
 # Price monitor
 
+- [Architecture diagram](#architecture-diagram)
 - [Useful commands](#useful-commands)
 
+## Architecture diagram
+
+![Price monitor architecture diagram](readme.jpg)
 ## Useful commands
 
  * `npm run build`   compile typescript to js
