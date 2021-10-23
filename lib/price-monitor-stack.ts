@@ -13,57 +13,72 @@ import * as sns from "@aws-cdk/aws-sns";
 import * as snsSubscriptions from "@aws-cdk/aws-sns-subscriptions";
 import * as ssm from "@aws-cdk/aws-ssm";
 
+const RESOURCE_ID_DYNAMODB_TABLE_PRICES = "DynamoDbTablePrices";
+const RESOURCE_ID_SSM_PARAMETER_EMAIL_ALERTS = "SsmParameterEmailAlerts";
+const RESOURCE_ID_SNS_TOPIC_ALERTS = "SnsTopicAlerts";
+const RESOURCE_ID_LAMBDA_PRICE_CHECK = "LambdaPriceCheck";
+const RESOURCE_ID_LAMBDA_NOTOFICATION = "LambdaNotification";
+const RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM = "LambdaPriceCheckAlarm";
+const RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM = "LambdaNotificationAlarm";
+const RESOURCE_ID_SCHEDULED_EVENT = "ScheduledEvent";
+
 export class PriceMonitorStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // DB to store price records
-    const dynamoDbTable = new dynamodb.Table(this, "PriceTable", {
-      partitionKey: {
-        name: "id",
-        type: dynamodb.AttributeType.STRING,
-      },
-      stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-    });
-
-    const emailAlerts = ssm.StringParameter.fromStringParameterAttributes(
+    const dynamoDbTablePrices = new dynamodb.Table(
       this,
-      "EmailAlertsParam",
+      RESOURCE_ID_DYNAMODB_TABLE_PRICES,
       {
-        parameterName: "/CommentsStack/EmailAlerts",
+        tableName: `${id}-${RESOURCE_ID_DYNAMODB_TABLE_PRICES}`,
+        partitionKey: {
+          name: "id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
       }
-    ).stringValue;
-
-    // SNS for lambda alerts
-    const topicPriceMonitorAlerts = new sns.Topic(this, "AlertsTopic");
-    topicPriceMonitorAlerts.addSubscription(
-      new snsSubscriptions.EmailSubscription(emailAlerts)
     );
 
-    // Lambda: Price Check
+    const ssmParameterEmailAlerts =
+      ssm.StringParameter.fromStringParameterAttributes(
+        this,
+        RESOURCE_ID_SSM_PARAMETER_EMAIL_ALERTS,
+        {
+          parameterName: `/${id}/EmailAlerts`,
+        }
+      ).stringValue;
+
+    const snsTopicAlerts = new sns.Topic(this, RESOURCE_ID_SNS_TOPIC_ALERTS, {
+      topicName: `${id}-${RESOURCE_ID_SNS_TOPIC_ALERTS}`,
+    });
+    snsTopicAlerts.addSubscription(
+      new snsSubscriptions.EmailSubscription(ssmParameterEmailAlerts)
+    );
+
     const lambdaPriceCheck = new lambdaNodejs.NodejsFunction(
       this,
-      "PriceCheckLambda",
+      RESOURCE_ID_LAMBDA_PRICE_CHECK,
       {
-        handler: "handler",
+        functionName: `${id}-${RESOURCE_ID_LAMBDA_PRICE_CHECK}`,
         timeout: cdk.Duration.seconds(20),
         memorySize: 256,
+        architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
         entry: path.join(__dirname, "..", "src", "lambdas", "price-check.ts"),
         environment: {
-          TABLE_NAME: dynamoDbTable.tableName,
+          TABLE_NAME: dynamoDbTablePrices.tableName,
         },
       }
     );
 
-    // Lambda: Notification
     const lambdaNotification = new lambdaNodejs.NodejsFunction(
       this,
-      "NotificationLambda",
+      RESOURCE_ID_LAMBDA_NOTOFICATION,
       {
-        handler: "handler",
+        functionName: `${id}-${RESOURCE_ID_LAMBDA_NOTOFICATION}`,
         timeout: cdk.Duration.seconds(20),
         memorySize: 256,
+        architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
         entry: path.join(
           __dirname,
@@ -75,11 +90,11 @@ export class PriceMonitorStack extends cdk.Stack {
       }
     );
 
-    // Alert for Lambda Price Check
-    const alarmPriceCheckLambda = new cloudwatch.Alarm(
+    const lambdaPriceCheckAlarm = new cloudwatch.Alarm(
       this,
-      "PriceCheckLambdaAlarm",
+      RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM,
       {
+        alarmName: `${id}-Errors-${RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM}`,
         metric: lambdaPriceCheck.metricErrors({
           period: cdk.Duration.minutes(15),
           statistic: "max",
@@ -92,11 +107,11 @@ export class PriceMonitorStack extends cdk.Stack {
       }
     );
 
-    // Alert for Lambda Notification
-    const alarmNotificationLambda = new cloudwatch.Alarm(
+    const lambdaNotificationAlarm = new cloudwatch.Alarm(
       this,
-      "NotificationLambdaAlarm",
+      RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM,
       {
+        alarmName: `${id}-Errors-${RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM}`,
         metric: lambdaNotification.metricErrors({
           period: cdk.Duration.minutes(15),
           statistic: "max",
@@ -109,37 +124,21 @@ export class PriceMonitorStack extends cdk.Stack {
       }
     );
 
-    // Alert, insufficient data and OK notificatoin for Lambda Price Check email subscription
-    alarmPriceCheckLambda.addAlarmAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
-    alarmPriceCheckLambda.addInsufficientDataAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
-    alarmPriceCheckLambda.addOkAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
+    [lambdaPriceCheckAlarm, lambdaNotificationAlarm].forEach((alarm) => {
+      alarm.addAlarmAction(new cloudwatchActions.SnsAction(snsTopicAlerts));
+      alarm.addInsufficientDataAction(
+        new cloudwatchActions.SnsAction(snsTopicAlerts)
+      );
+      alarm.addOkAction(new cloudwatchActions.SnsAction(snsTopicAlerts));
+    });
 
-    // Alert, insufficient data and OK notificatoin  for Lambda Notification email subscription
-    alarmNotificationLambda.addAlarmAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
-    alarmNotificationLambda.addInsufficientDataAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
-    alarmNotificationLambda.addOkAction(
-      new cloudwatchActions.SnsAction(topicPriceMonitorAlerts)
-    );
-
-    // Subscribe lmbda to db stream
     lambdaNotification.addEventSource(
-      new awsLambdaEventSources.DynamoEventSource(dynamoDbTable, {
+      new awsLambdaEventSources.DynamoEventSource(dynamoDbTablePrices, {
         startingPosition: lambda.StartingPosition.TRIM_HORIZON,
         batchSize: 1,
       })
     );
 
-    // authorize lambda to send email
     lambdaNotification.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["ses:SendEmail"],
@@ -147,11 +146,10 @@ export class PriceMonitorStack extends cdk.Stack {
       })
     );
 
-    // grant db access
-    dynamoDbTable.grantReadWriteData(lambdaPriceCheck);
+    dynamoDbTablePrices.grantReadWriteData(lambdaPriceCheck);
 
-    // rules
-    new events.Rule(this, "ScheduledEvent", {
+    new events.Rule(this, RESOURCE_ID_SCHEDULED_EVENT, {
+      ruleName: `${id}-${RESOURCE_ID_SCHEDULED_EVENT}`,
       schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
       targets: [new targets.LambdaFunction(lambdaPriceCheck)],
     });
