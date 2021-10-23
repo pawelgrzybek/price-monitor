@@ -13,14 +13,16 @@ import * as sns from "@aws-cdk/aws-sns";
 import * as snsSubscriptions from "@aws-cdk/aws-sns-subscriptions";
 import * as ssm from "@aws-cdk/aws-ssm";
 
-const RESOURCE_ID_DYNAMODB_TABLE_PRICES = "DynamoDbTablePrices";
-const RESOURCE_ID_SSM_PARAMETER_EMAIL_ALERTS = "SsmParameterEmailAlerts";
-const RESOURCE_ID_SNS_TOPIC_ALERTS = "SnsTopicAlerts";
-const RESOURCE_ID_LAMBDA_PRICE_CHECK = "LambdaPriceCheck";
-const RESOURCE_ID_LAMBDA_NOTOFICATION = "LambdaNotification";
-const RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM = "LambdaPriceCheckAlarm";
-const RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM = "LambdaNotificationAlarm";
-const RESOURCE_ID_SCHEDULED_EVENT = "ScheduledEvent";
+const RESOURCE_ID = {
+  DYNAMODB_TABLE_PRICES: "DynamoDbTablePrices",
+  SSM_PARAMETER_EMAIL_ALERTS: "SsmParameterEmailAlerts",
+  SNS_TOPIC_ALERTS: "SnsTopicAlerts",
+  LAMBDA_PRICE_CHECK: "LambdaPriceCheck",
+  LAMBDA_NOTOFICATION: "LambdaNotification",
+  LAMBDA_PRICE_CHECK_ALARM: "LambdaPriceCheckAlarm",
+  LAMBDA_NOTOFICATION_ALARM: "LambdaNotificationAlarm",
+  SCHEDULED_EVENT: "ScheduledEvent",
+};
 
 export class PriceMonitorStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -28,9 +30,9 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const dynamoDbTablePrices = new dynamodb.Table(
       this,
-      RESOURCE_ID_DYNAMODB_TABLE_PRICES,
+      RESOURCE_ID.DYNAMODB_TABLE_PRICES,
       {
-        tableName: `${id}-${RESOURCE_ID_DYNAMODB_TABLE_PRICES}`,
+        tableName: `${id}-${RESOURCE_ID.DYNAMODB_TABLE_PRICES}`,
         partitionKey: {
           name: "id",
           type: dynamodb.AttributeType.STRING,
@@ -42,14 +44,14 @@ export class PriceMonitorStack extends cdk.Stack {
     const ssmParameterEmailAlerts =
       ssm.StringParameter.fromStringParameterAttributes(
         this,
-        RESOURCE_ID_SSM_PARAMETER_EMAIL_ALERTS,
+        RESOURCE_ID.SSM_PARAMETER_EMAIL_ALERTS,
         {
           parameterName: `/${id}/EmailAlerts`,
         }
       ).stringValue;
 
-    const snsTopicAlerts = new sns.Topic(this, RESOURCE_ID_SNS_TOPIC_ALERTS, {
-      topicName: `${id}-${RESOURCE_ID_SNS_TOPIC_ALERTS}`,
+    const snsTopicAlerts = new sns.Topic(this, RESOURCE_ID.SNS_TOPIC_ALERTS, {
+      topicName: `${id}-${RESOURCE_ID.SNS_TOPIC_ALERTS}`,
     });
     snsTopicAlerts.addSubscription(
       new snsSubscriptions.EmailSubscription(ssmParameterEmailAlerts)
@@ -57,9 +59,9 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const lambdaPriceCheck = new lambdaNodejs.NodejsFunction(
       this,
-      RESOURCE_ID_LAMBDA_PRICE_CHECK,
+      RESOURCE_ID.LAMBDA_PRICE_CHECK,
       {
-        functionName: `${id}-${RESOURCE_ID_LAMBDA_PRICE_CHECK}`,
+        functionName: `${id}-${RESOURCE_ID.LAMBDA_PRICE_CHECK}`,
         timeout: cdk.Duration.seconds(20),
         memorySize: 256,
         architecture: lambda.Architecture.ARM_64,
@@ -73,9 +75,9 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const lambdaNotification = new lambdaNodejs.NodejsFunction(
       this,
-      RESOURCE_ID_LAMBDA_NOTOFICATION,
+      RESOURCE_ID.LAMBDA_NOTOFICATION,
       {
-        functionName: `${id}-${RESOURCE_ID_LAMBDA_NOTOFICATION}`,
+        functionName: `${id}-${RESOURCE_ID.LAMBDA_NOTOFICATION}`,
         timeout: cdk.Duration.seconds(20),
         memorySize: 256,
         architecture: lambda.Architecture.ARM_64,
@@ -92,9 +94,9 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const lambdaPriceCheckAlarm = new cloudwatch.Alarm(
       this,
-      RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM,
+      RESOURCE_ID.LAMBDA_PRICE_CHECK_ALARM,
       {
-        alarmName: `${id}-Errors-${RESOURCE_ID_LAMBDA_PRICE_CHECK_ALARM}`,
+        alarmName: `${id}-Errors-${RESOURCE_ID.LAMBDA_PRICE_CHECK_ALARM}`,
         metric: lambdaPriceCheck.metricErrors({
           period: cdk.Duration.minutes(15),
           statistic: "max",
@@ -109,9 +111,9 @@ export class PriceMonitorStack extends cdk.Stack {
 
     const lambdaNotificationAlarm = new cloudwatch.Alarm(
       this,
-      RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM,
+      RESOURCE_ID.LAMBDA_NOTOFICATION_ALARM,
       {
-        alarmName: `${id}-Errors-${RESOURCE_ID_LAMBDA_NOTOFICATION_ALARM}`,
+        alarmName: `${id}-Errors-${RESOURCE_ID.LAMBDA_NOTOFICATION_ALARM}`,
         metric: lambdaNotification.metricErrors({
           period: cdk.Duration.minutes(15),
           statistic: "max",
@@ -148,8 +150,8 @@ export class PriceMonitorStack extends cdk.Stack {
 
     dynamoDbTablePrices.grantReadWriteData(lambdaPriceCheck);
 
-    new events.Rule(this, RESOURCE_ID_SCHEDULED_EVENT, {
-      ruleName: `${id}-${RESOURCE_ID_SCHEDULED_EVENT}`,
+    new events.Rule(this, RESOURCE_ID.SCHEDULED_EVENT, {
+      ruleName: `${id}-${RESOURCE_ID.SCHEDULED_EVENT}`,
       schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
       targets: [new targets.LambdaFunction(lambdaPriceCheck)],
     });
