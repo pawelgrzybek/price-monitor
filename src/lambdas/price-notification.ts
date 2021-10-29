@@ -62,7 +62,7 @@ const handler: DynamoDBStreamHandler = async (event) => {
     return;
   } catch (error) {
     console.error(error);
-    throw new Error("Uuuups!");
+    throw new Error(error instanceof Error ? error.message : String(error));
   }
 };
 
