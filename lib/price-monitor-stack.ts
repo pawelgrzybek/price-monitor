@@ -63,7 +63,7 @@ export class PriceMonitorStack extends cdk.Stack {
       {
         functionName: `${id}-${RESOURCE_ID.LAMBDA_PRICE_CHECK}`,
         timeout: cdk.Duration.seconds(20),
-        memorySize: 256,
+        memorySize: 512,
         architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
         entry: path.join(__dirname, "..", "src", "lambdas", "price-check.ts"),
@@ -79,7 +79,7 @@ export class PriceMonitorStack extends cdk.Stack {
       {
         functionName: `${id}-${RESOURCE_ID.LAMBDA_NOTOFICATION}`,
         timeout: cdk.Duration.seconds(20),
-        memorySize: 256,
+        memorySize: 512,
         architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
         entry: path.join(
