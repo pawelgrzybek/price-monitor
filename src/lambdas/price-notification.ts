@@ -2,7 +2,7 @@ import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import getEmailTemplate from "../utils/getEmailTemplate.js";
 import { DynamoDBStreamHandler } from "aws-lambda";
-import { captureAWSv3Client, getSegment, Segment } from "aws-xray-sdk-core";
+import { captureAWSv3Client } from "aws-xray-sdk-core";
 
 // envs
 const { AWS_REGION: region } = process.env;
