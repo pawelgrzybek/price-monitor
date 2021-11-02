@@ -8,7 +8,9 @@ import { captureAWSv3Client, getSegment, Segment } from "aws-xray-sdk-core";
 const { AWS_REGION: region } = process.env;
 
 // clients init
-const sesClient = captureAWSv3Client(new SESClient({ region }));
+// as any as a temporarly workaround for
+// https://github.com/aws/aws-xray-sdk-node/issues/439
+const sesClient = captureAWSv3Client(new SESClient({ region }) as any);
 
 const handler: DynamoDBStreamHandler = async (event) => {
   console.log(`event: ${JSON.stringify(event)}`);
