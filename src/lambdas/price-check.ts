@@ -13,8 +13,6 @@ import { captureAWSv3Client, getSegment, Segment } from "aws-xray-sdk-core";
 const { AWS_REGION: region, TABLE_NAME: TableName } = process.env;
 
 // clients init
-// as any as a temporarly workaround for
-// https://github.com/aws/aws-xray-sdk-node/issues/439
 const dbClient = captureAWSv3Client(new DynamoDBClient({ region }) as any);
 
 const handler: ScheduledHandler = async (event) => {
