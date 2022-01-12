@@ -1,17 +1,22 @@
 import * as path from "path";
-import * as cdk from "@aws-cdk/core";
-import * as events from "@aws-cdk/aws-events";
-import * as targets from "@aws-cdk/aws-events-targets";
-import * as lambdaNodejs from "@aws-cdk/aws-lambda-nodejs";
-import * as lambda from "@aws-cdk/aws-lambda";
-import * as dynamodb from "@aws-cdk/aws-dynamodb";
-import * as iam from "@aws-cdk/aws-iam";
-import * as awsLambdaEventSources from "@aws-cdk/aws-lambda-event-sources";
-import * as cloudwatch from "@aws-cdk/aws-cloudwatch";
-import * as cloudwatchActions from "@aws-cdk/aws-cloudwatch-actions";
-import * as sns from "@aws-cdk/aws-sns";
-import * as snsSubscriptions from "@aws-cdk/aws-sns-subscriptions";
-import * as ssm from "@aws-cdk/aws-ssm";
+import { Construct } from "constructs";
+import {
+  aws_events as events,
+  aws_events_targets as targets,
+  aws_lambda_nodejs as lambdaNodejs,
+  aws_lambda as lambda,
+  aws_dynamodb as dynamodb,
+  aws_iam as iam,
+  aws_lambda_event_sources as awsLambdaEventSources,
+  aws_cloudwatch as cloudwatch,
+  aws_cloudwatch_actions as cloudwatchActions,
+  aws_sns as sns,
+  aws_sns_subscriptions as snsSubscriptions,
+  aws_ssm as ssm,
+  Stack,
+  StackProps,
+  Duration,
+} from "aws-cdk-lib";
 
 const RESOURCE_ID = {
   DYNAMODB_TABLE_PRICES: "DynamoDbTablePrices",
@@ -24,8 +29,8 @@ const RESOURCE_ID = {
   SCHEDULED_EVENT: "ScheduledEvent",
 };
 
-export class PriceMonitorStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+export class PriceMonitorStack extends Stack {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     const dynamoDbTablePrices = new dynamodb.Table(
@@ -62,7 +67,7 @@ export class PriceMonitorStack extends cdk.Stack {
       RESOURCE_ID.LAMBDA_PRICE_CHECK,
       {
         functionName: `${id}-${RESOURCE_ID.LAMBDA_PRICE_CHECK}`,
-        timeout: cdk.Duration.seconds(20),
+        timeout: Duration.seconds(20),
         memorySize: 512,
         architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
@@ -78,7 +83,7 @@ export class PriceMonitorStack extends cdk.Stack {
       RESOURCE_ID.LAMBDA_NOTOFICATION,
       {
         functionName: `${id}-${RESOURCE_ID.LAMBDA_NOTOFICATION}`,
-        timeout: cdk.Duration.seconds(20),
+        timeout: Duration.seconds(20),
         memorySize: 512,
         architecture: lambda.Architecture.ARM_64,
         tracing: lambda.Tracing.ACTIVE,
@@ -98,7 +103,7 @@ export class PriceMonitorStack extends cdk.Stack {
       {
         alarmName: `${id}-Errors-${RESOURCE_ID.LAMBDA_PRICE_CHECK_ALARM}`,
         metric: lambdaPriceCheck.metricErrors({
-          period: cdk.Duration.minutes(15),
+          period: Duration.minutes(15),
           statistic: "max",
         }),
         threshold: 0,
@@ -115,7 +120,7 @@ export class PriceMonitorStack extends cdk.Stack {
       {
         alarmName: `${id}-Errors-${RESOURCE_ID.LAMBDA_NOTOFICATION_ALARM}`,
         metric: lambdaNotification.metricErrors({
-          period: cdk.Duration.minutes(15),
+          period: Duration.minutes(15),
           statistic: "max",
         }),
         threshold: 0,
@@ -152,7 +157,7 @@ export class PriceMonitorStack extends cdk.Stack {
 
     new events.Rule(this, RESOURCE_ID.SCHEDULED_EVENT, {
       ruleName: `${id}-${RESOURCE_ID.SCHEDULED_EVENT}`,
-      schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
+      schedule: events.Schedule.rate(Duration.minutes(15)),
       targets: [new targets.LambdaFunction(lambdaPriceCheck)],
     });
   }
