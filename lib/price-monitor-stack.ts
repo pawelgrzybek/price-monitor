@@ -103,7 +103,7 @@ export class PriceMonitorStack extends Stack {
       {
         alarmName: `${id}-Errors-${RESOURCE_ID.LAMBDA_PRICE_CHECK_ALARM}`,
         metric: lambdaPriceCheck.metricErrors({
-          period: Duration.minutes(15),
+          period: Duration.hours(2),
           statistic: "max",
         }),
         threshold: 0,
